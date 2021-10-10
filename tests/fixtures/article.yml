@@ -1,0 +1,13 @@
+# TODO use faker.js to generate fixtures
+entity: article
+parameters: {}
+items:
+    article1:
+        slug: 'slug'
+        title: 'tite'
+        description: 'description'
+        body: 'body'
+        tagList: 'tag list'
+        favoriteCount: 1
+        authorId: '@user1'
+

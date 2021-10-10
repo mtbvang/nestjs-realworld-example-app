@@ -1,0 +1,14 @@
+- name: default
+  type: postgres
+  host: localhost
+  port: 25432
+  database: nestjsrealworld
+  username: nestjsrealworld
+  password: nestjsrealworld
+  synchronize: false
+  logging: false
+  dropSchema: false
+  entities:
+      - ./src/**/**.entity.ts
+  cli:
+      entitiesDir: ./src/entities

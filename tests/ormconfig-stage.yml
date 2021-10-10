@@ -1,0 +1,14 @@
+- name: default
+  type: postgres
+  host: # TODO
+  port: 5432
+  database: # TODO
+  username: # TODO
+  password: # TODO
+  synchronize: false
+  logging: false
+  dropSchema: false
+  entities:
+      - ./src/**/**.entity.ts
+  cli:
+      entitiesDir: ./src/entities

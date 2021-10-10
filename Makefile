@@ -160,6 +160,10 @@ db-migration-run:set-env-file-local build ## db-migration-run-(local|docker) Run
 	sed -i.bak "s~\*.ts~\*.js~g" .env; \
 	npm run typeorm -- migration:run -t=each
 
+.PHONY: db-load-fixtures-*
+db-load-fixtures-%: ## db-load-fixtures-(docker|stage) docker=database running in docker, stage=staging environment. Run typeorm-fixtures load fixtures in database.
+	@npm run fixtures -- --config tests/ormconfig-$*.yml
+
 .PHONY: clean-bak-files
 clean-bak-files: ## Remove all .bak files create by sed -i.bak option
 	@rm -f .*.bak || true; \
