@@ -4,7 +4,6 @@ import { Repository, getRepository, DeleteResult } from 'typeorm';
 import { UserEntity } from './user.entity';
 import {CreateUserDto, LoginUserDto, UpdateUserDto} from './dto';
 const jwt = require('jsonwebtoken');
-import { SECRET } from '../config';
 import { UserRO } from './user.interface';
 import { validate } from 'class-validator';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
@@ -110,7 +109,7 @@ export class UserService {
       username: user.username,
       email: user.email,
       exp: exp.getTime() / 1000,
-    }, SECRET);
+    }, process.env.SECRET);
   };
 
   private buildUserRO(user: UserEntity) {

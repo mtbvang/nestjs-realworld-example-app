@@ -1,0 +1,45 @@
+version: '3.4'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api-dev
+    environment:
+      - NODE_ENV=DOCKER
+    ports:
+      - '${API_PORT:-23000}:3000'
+      - '${API_DEBUG_PORT:-29229}:9229'
+    expose:
+      - 9229
+    depends_on:
+      - postgres
+    links:
+      - postgres:postgres
+    volumes:
+      - .:/app
+      - /app/node_modules # This trick stops the local nodemodules folder from being mounted. This is need because node modules are OS dependent. We volume is reuseable if we don't destroy it.
+    command: npm run start:watch
+
+  postgres:
+    ipc: host
+    image: postgres:11.5-alpine
+    environment:
+      - POSTGRES_HOST=/run/postgresql
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - DB_PORT=5432
+      - 'APP_DATABASE=${TYPEORM_DATABASE:-netjsrealworld}'
+      - 'APP_USER=${TYPEORM_USERNAME:-netjsrealworld}'
+      - 'APP_USER_PASSWORD=${TYPEORM_PASSWORD:-netjsrealworld}'
+      - TZ=Europe/Copenhagen
+      - LANG=en_US.UTF-8
+      - LANGUAGE=en_US.UTF-8
+      - LC_ALL=en_US.UTF-8
+    ports:
+      - '${DATABASE_PORT:-25432}:5432'
+    volumes:
+      - ./bin/db-create.sh:/docker-entrypoint-initdb.d/db-create.sh
+    command: '-i'
+

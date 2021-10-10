@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+_docs
+Dockerfile
+.idea
+.vscode
+.editorconfig
+README.md
+docker-compose.yml
+
+
