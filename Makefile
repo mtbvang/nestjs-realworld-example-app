@@ -82,7 +82,8 @@ set-env-file-%: ## db-set-env-file-(local|docker|stage|prod) Set the environment
 
 .PHONY: up
 up: set-env-file-docker ports ## Bring up the database, and api containers.
-	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} up --build --no-recreate -d;
+	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} up --build --no-recreate -d; \
+
 
 .PHONY: down
 down: ## Stop and remove containers, networks, images, and volumes
@@ -154,15 +155,15 @@ db-migration-generate: set-env-file-local ## Generate the db migrations from the
 	npm i; \
 	npm run typeorm -- migration:generate -n $$MIGRATION_NAME
 
-.PHONY: db-migration-run
-db-migration-run: set-env-file-local build ## db-migration-run-(local|docker) Run the typeorm db migrations ordered by their dates.
+.PHONY: db-migration-run-*
+db-migration-run-%: set-env-file-local build ## db-migration-run-(local|stage|prod) Run the typeorm db migrations ordered by their dates.
 	@echo "Updating .env TYPEORM_ENTITIES TYPEORM_ENTITIES_DIR to include dist dir for migration:run command"; \
 	sed -i.bak "s~=src/~=dist/~g" .env; \
 	sed -i.bak "s~\.ts~\.js~g" .env; \
 	npm run typeorm -- migration:run -t=each
 
 .PHONY: db-load-fixtures-*
-db-load-fixtures-%: ## db-load-fixtures-(docker|stage) docker=database running in docker, stage=staging environment. Run typeorm-fixtures load fixtures in database.
+db-load-fixtures-%: ## db-load-fixtures-(local|stage) docker=database running in docker, stage=staging environment. Run typeorm-fixtures load fixtures in database.
 	@npm run fixtures -- --config tests/ormconfig-$*.yml
 
 .PHONE: db-drop-*
@@ -186,6 +187,14 @@ db-create-%: set-env-file-% ## db-create-(local|stage|prod). Create the api data
 	export APP_USER=$(TYPEORM_USERNAME); \
 	export DB_PORT=$(TYPEORM_PORT); \
 	./bin/db-create.sh;
+
+.PHONY: db-restore-*
+db-restore-%: ## db-restore-(local|docker|docker-cypress|dev|stage|prod). Recreate database,run migrations and load fixtures.
+	$(MAKE)	db-drop-$* || (exit 1) && \
+	$(MAKE)	db-create-$* || (exit 1) && \
+	$(MAKE)	db-migration-run-$* || (exit 1) && \
+	$(MAKE)	db-load-fixtures-$* || (exit 1) && \
+	echo 'Database recreated and migrations applied.'
 
 .PHONY: clean-bak-files
 clean-bak-files: ## Remove all .bak files create by sed -i.bak option
