@@ -74,7 +74,7 @@ ports: ## Print the port numbers used for the docker compose container services
 .PHONY: set-env-file-*
 set-env-file-%: ## db-set-env-file-(local|docker|stage|prod) Set the
 	@echo "Writing .env file for $* env"; \
-	cp .env.$* .env && chmod 0777 .env;
+	cp -f .env.$* .env && chmod 0777 .env;
 
 .PHONY: up
 up: set-env-file-docker ports ## Bring up the database, and api containers.
@@ -133,6 +133,12 @@ attach-%: ## attach-(api_n|database_n) Docker attach to the running database con
 # END TARGETS FOR DOCKER COMPOSE FOR LOCAL DEVELOPMENT
 #-----------------------------------------------------
 
+.PHONY: build
+build: ## build typescript to js files in dist dir.
+	@npm install; \
+	npm run build; \
+	chmod -R 0777 dist
+
 .PHONY: db-migration-generate
 db-migration-generate: set-env-file-local ## Generate the db migrations from the entities.
 	@if [[ -z "${NEWVERSION}" ]]; then \
@@ -143,6 +149,16 @@ db-migration-generate: set-env-file-local ## Generate the db migrations from the
 	sed -i.bak "s/^VERSION_DB_MIGRATION ?= ${VERSION_DB_MIGRATION}/VERSION_DB_MIGRATION ?= $$NEWVERSION/g" Makefile; \
 	npm i; \
 	npm run typeorm -- migration:generate -n $$MIGRATION_NAME
+
+.PHONY: db-migration-run
+db-migration-run:set-env-file-local build ## db-migration-run-(local|docker) Run the typeorm db migrations ordered by their dates.
+	@echo "Updating .env TYPEORM_ENTITIES TYPEORM_ENTITIES_DIR to include dist dir for migration:run command"; \
+	sed -i.bak "s~^TYPEORM_ENTITIES=src/entities~TYPEORM_ENTITIES=dist/src/entities~g" .env; \
+	sed -i.bak "s~^TYPEORM_ENTITIES_DIR=src~TYPEORM_ENTITIES_DIR=dist/src~g" .env; \
+	sed -i.bak "s~^TYPEORM_MIGRATIONS=src/migrations~TYPEORM_MIGRATIONS=dist/src/migrations~g" .env; \
+	sed -i.bak "s~^TYPEORM_MIGRATIONS_DIR=src~TYPEORM_MIGRATIONS_DIR=dist/src~g" .env; \
+	sed -i.bak "s~\*.ts~\*.js~g" .env; \
+	npm run typeorm -- migration:run -t=each
 
 .PHONY: clean-bak-files
 clean-bak-files: ## Remove all .bak files create by sed -i.bak option

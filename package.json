@@ -24,15 +24,15 @@
   },
   "homepage": "https://github.com/lujakob/nestjs-realworld-example-app#readme",
   "dependencies": {
-    "@nestjs/common": "^7.0.5",
-    "@nestjs/config": "^1.0.2",
-    "@nestjs/core": "^7.0.5",
-    "@nestjs/microservices": "^7.0.5",
-    "@nestjs/platform-express": "^7.0.5",
+    "@nestjs/common": "^7.6.18",
+    "@nestjs/config": "0.6.3",
+    "@nestjs/core": "^7.6.18",
+    "@nestjs/microservices": "^7.6.18",
+    "@nestjs/platform-express": "^7.6.18",
     "@nestjs/swagger": "^4.4.0",
-    "@nestjs/testing": "^7.0.5",
-    "@nestjs/typeorm": "^7.0.0",
-    "@nestjs/websockets": "^7.0.5",
+    "@nestjs/testing": "^7.6.18",
+    "@nestjs/typeorm": "^7.1.5",
+    "@nestjs/websockets": "^7.6.18",
     "argon2": "^0.26.2",
     "class-transformer": "^0.2.3",
     "class-validator": "^0.11.1",
@@ -41,12 +41,12 @@
     "jsonwebtoken": "^8.5.1",
     "passport-jwt": "^4.0.0",
     "pg": "^8.7.1",
+    "postgres": "^1.0.2",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^6.5.5",
     "slug": "^1.1.0",
     "swagger-ui-express": "^4.1.4",
-    "typeorm": "^0.2.24",
-    "typescript": "^3.8.3"
+    "typeorm": "^0.2.38"
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
@@ -58,6 +58,7 @@
     "nodemon": "^1.19.4",
     "supertest": "^3.4.2",
     "ts-jest": "^25.4.0",
-    "ts-node": "^8.9.1"
+    "ts-node": "^8.9.1",
+    "typescript": "^3.9.10"
   }
 }

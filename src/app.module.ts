@@ -11,7 +11,9 @@ import { TagModule } from './tag/tag.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot(),
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+        isGlobal: true,
+    }),
     ArticleModule,
     UserModule,
     ProfileModule,
