@@ -25,7 +25,7 @@ help: ## This help dialog.
 
 
 define setup_env
-	$(eval ENV_FILE := env/$(1).env)
+	$(eval ENV_FILE := .env,$(1))
 	@echo " - setup env $(ENV_FILE)"
 	$(eval include .env.$(1))
 	$(eval export sed 's/=.*//' .env.$(1))
@@ -170,7 +170,7 @@ db-load-fixtures-%: ## db-load-fixtures-(docker|stage) docker=database running i
 
 .PHONE: db-drop-*
 db-drop-%: set-env-file-% ## db-drop-(local|stage|prod) Drop the api database
-	@echo "Calling script to drop database on $* env."; \
+	@echo "Calling script to drop database on $* env"; \
 	export POSTGRES_HOST=$(TYPEORM_HOST); \
 	export POSTGRES_USER=$(POSTGRES_USER); \
 	export POSTGRES_DB=$(POSTGRES_DB); \
@@ -178,6 +178,17 @@ db-drop-%: set-env-file-% ## db-drop-(local|stage|prod) Drop the api database
 	export APP_USER=$(TYPEORM_USERNAME); \
 	export DB_PORT=$(TYPEORM_PORT); \
 	./bin/db-drop.sh
+
+.PHONY: db-ceate-*
+db-create-%: set-env-file-% ## db-create-(local|stage|prod). Create the api database on the specified environment.
+	@echo "Calling script to create database on $* env"; \
+	export POSTGRES_HOST=$(TYPEORM_HOST); \
+	export POSTGRES_USER=$(POSTGRES_USER); \
+	export POSTGRES_DB=$(POSTGRES_DB); \
+	export APP_DATABASE=$(TYPEORM_DATABASE); \
+	export APP_USER=$(TYPEORM_USERNAME); \
+	export DB_PORT=$(TYPEORM_PORT); \
+	./bin/db-create.sh;
 
 .PHONY: clean-bak-files
 clean-bak-files: ## Remove all .bak files create by sed -i.bak option
