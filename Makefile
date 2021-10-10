@@ -23,10 +23,13 @@ help: ## This help dialog.
 		printf "%s\n" $$help_info; \
 	done
 
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
+
+define setup_env
+	$(eval ENV_FILE := env/$(1).env)
+	@echo " - setup env $(ENV_FILE)"
+	$(eval include .env.$(1))
+	$(eval export sed 's/=.*//' .env.$(1))
+endef
 
 PROJECT_DIR := $(notdir $(CURDIR))
 
@@ -72,8 +75,9 @@ ports: ## Print the port numbers used for the docker compose container services
 	echo "DATABASE_PORT: ${DATABASE_PORT}";
 
 .PHONY: set-env-file-*
-set-env-file-%: ## db-set-env-file-(local|docker|stage|prod) Set the
-	@echo "Writing .env file for $* env"; \
+set-env-file-%: ## db-set-env-file-(local|docker|stage|prod) Set the environment variables in this makefile session and copy the specific environment specific file as the default .env.
+	@echo "Including .env.$*"; \
+	$(call setup_env,$*) \
 	cp -f .env.$* .env && chmod 0777 .env;
 
 .PHONY: up
@@ -151,7 +155,7 @@ db-migration-generate: set-env-file-local ## Generate the db migrations from the
 	npm run typeorm -- migration:generate -n $$MIGRATION_NAME
 
 .PHONY: db-migration-run
-db-migration-run:set-env-file-local build ## db-migration-run-(local|docker) Run the typeorm db migrations ordered by their dates.
+db-migration-run: set-env-file-local build ## db-migration-run-(local|docker) Run the typeorm db migrations ordered by their dates.
 	@echo "Updating .env TYPEORM_ENTITIES TYPEORM_ENTITIES_DIR to include dist dir for migration:run command"; \
 	sed -i.bak "s~^TYPEORM_ENTITIES=src/entities~TYPEORM_ENTITIES=dist/src/entities~g" .env; \
 	sed -i.bak "s~^TYPEORM_ENTITIES_DIR=src~TYPEORM_ENTITIES_DIR=dist/src~g" .env; \
@@ -163,6 +167,17 @@ db-migration-run:set-env-file-local build ## db-migration-run-(local|docker) Run
 .PHONY: db-load-fixtures-*
 db-load-fixtures-%: ## db-load-fixtures-(docker|stage) docker=database running in docker, stage=staging environment. Run typeorm-fixtures load fixtures in database.
 	@npm run fixtures -- --config tests/ormconfig-$*.yml
+
+.PHONE: db-drop-*
+db-drop-%: set-env-file-% ## db-drop-(local|stage|prod) Drop the api database
+	@echo "Calling script to drop database on $* env."; \
+	export POSTGRES_HOST=$(TYPEORM_HOST); \
+	export POSTGRES_USER=$(POSTGRES_USER); \
+	export POSTGRES_DB=$(POSTGRES_DB); \
+	export APP_DATABASE=$(TYPEORM_DATABASE); \
+	export APP_USER=$(TYPEORM_USERNAME); \
+	export DB_PORT=$(TYPEORM_PORT); \
+	./bin/db-drop.sh
 
 .PHONY: clean-bak-files
 clean-bak-files: ## Remove all .bak files create by sed -i.bak option
