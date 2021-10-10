@@ -25,7 +25,7 @@ help: ## This help dialog.
 
 
 define setup_env
-	$(eval ENV_FILE := .env,$(1))
+	$(eval ENV_FILE := .env.$(1))
 	@echo " - setup env $(ENV_FILE)"
 	$(eval include .env.$(1))
 	$(eval export sed 's/=.*//' .env.$(1))
@@ -157,11 +157,8 @@ db-migration-generate: set-env-file-local ## Generate the db migrations from the
 .PHONY: db-migration-run
 db-migration-run: set-env-file-local build ## db-migration-run-(local|docker) Run the typeorm db migrations ordered by their dates.
 	@echo "Updating .env TYPEORM_ENTITIES TYPEORM_ENTITIES_DIR to include dist dir for migration:run command"; \
-	sed -i.bak "s~^TYPEORM_ENTITIES=src/entities~TYPEORM_ENTITIES=dist/src/entities~g" .env; \
-	sed -i.bak "s~^TYPEORM_ENTITIES_DIR=src~TYPEORM_ENTITIES_DIR=dist/src~g" .env; \
-	sed -i.bak "s~^TYPEORM_MIGRATIONS=src/migrations~TYPEORM_MIGRATIONS=dist/src/migrations~g" .env; \
-	sed -i.bak "s~^TYPEORM_MIGRATIONS_DIR=src~TYPEORM_MIGRATIONS_DIR=dist/src~g" .env; \
-	sed -i.bak "s~\*.ts~\*.js~g" .env; \
+	sed -i.bak "s~=src/~=dist/~g" .env; \
+	sed -i.bak "s~\.ts~\.js~g" .env; \
 	npm run typeorm -- migration:run -t=each
 
 .PHONY: db-load-fixtures-*
