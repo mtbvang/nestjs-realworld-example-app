@@ -1,30 +1,47 @@
-########################################################################################################################
+#-----------------------------------------------------------------------------------------------------------------------
 # This file acts as the top most level of control in the code base and stores configuration details that are passed
 # down to tools like docker compose and application configuration files. The most common form of all commands run
 # are captured here. Instead of writing documentation try and script what is possible. Living code is really the only way
 # to get up to date documentation. It's also faster in the long run.
-########################################################################################################################
-.PHONY:
+#-----------------------------------------------------------------------------------------------------------------------
 
+SHELL = /bin/bash
 
-help:
-	@grep -E '^[%0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+help: ## This help dialog.
+	@IFS=$$'\n' ; \
+	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
+	printf "%-30s %s\n" "target" "help" ; \
+	printf "%-30s %s\n" "------" "----" ; \
+	for help_line in $${help_lines[@]}; do \
+		IFS=$$':' ; \
+		help_split=($$help_line) ; \
+		help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
+		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
+		printf '\033[36m'; \
+		printf "%-30s %s" $$help_command ; \
+		printf '\033[0m'; \
+		printf "%s\n" $$help_info; \
+	done
 
 ifneq (,$(wildcard ./.env))
     include .env
     export
 endif
 
-SHELL = /bin/bash
-
 PROJECT_DIR := $(notdir $(CURDIR))
 
 # Values used by targets that use pattern rules (targets with -% in name) to reduce target code duplication
 ENV_NAME_UPPERCASE=$(shell echo '$*' | tr '[:lower:]' '[:upper:]')
 
-#########################################################
-## START TARGETS FOR DOCKER COMPOSE FOR LOCAL DEVELOPMENT
-#########################################################
+# api app node version
+NODE_VERSION = 12.14.1
+
+VERSION_API_APP ?= 0.0.1
+VERSION_DB_MIGRATION ?= 0
+
+#--------------------------------------------------------
+# START TARGETS FOR DOCKER COMPOSE FOR LOCAL DEVELOPMENT
+#--------------------------------------------------------
 
 COMPOSE_HTTP_TIMEOUT=600
 API_HOST_PORT_BASE?=20000
@@ -112,6 +129,22 @@ recreate-%: up-% ## recreate-(api|database). Recreate (by calling up-%) the cont
 attach-%: ## attach-(api_n|database_n) Docker attach to the running database container. There can be n instance so you must specify which instance.
 	@${DOCKER_COMPOSE_ENV_VARS} docker exec -it ${COMPOSE_PROJECT_NAME}_$* /bin/bash
 
-#########################################################
-## END TARGETS FOR DOCKER COMPOSE FOR LOCAL DEVELOPMENT
-#########################################################
+#-----------------------------------------------------
+# END TARGETS FOR DOCKER COMPOSE FOR LOCAL DEVELOPMENT
+#-----------------------------------------------------
+
+.PHONY: db-migration-generate
+db-migration-generate: set-env-file-local ## Generate the db migrations from the entities.
+	@if [[ -z "${NEWVERSION}" ]]; then \
+		read -r -p "The current db migration version is ${VERSION_DB_MIGRATION} enter the new version: " NEWVERSION; \
+		export MIGRATION_NAME="v$${NEWVERSION}_"; \
+	fi; \
+	echo "MIGRATION_NAME=$$MIGRATION_NAME"; \
+	sed -i.bak "s/^VERSION_DB_MIGRATION ?= ${VERSION_DB_MIGRATION}/VERSION_DB_MIGRATION ?= $$NEWVERSION/g" Makefile; \
+	npm i; \
+	npm run typeorm -- migration:generate -n $$MIGRATION_NAME
+
+.PHONY: clean-bak-files
+clean-bak-files: ## Remove all .bak files create by sed -i.bak option
+	@rm -f .*.bak || true; \
+	rm -f *.bak || true;

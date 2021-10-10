@@ -14,15 +14,15 @@ services:
     expose:
       - 9229
     depends_on:
-      - postgres
+      - database
     links:
-      - postgres:postgres
+      - database:database
     volumes:
       - .:/app
       - /app/node_modules # This trick stops the local nodemodules folder from being mounted. This is need because node modules are OS dependent. We volume is reuseable if we don't destroy it.
     command: npm run start:watch
 
-  postgres:
+  database:
     ipc: host
     image: postgres:11.5-alpine
     environment:
@@ -30,9 +30,9 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
       - DB_PORT=5432
-      - 'APP_DATABASE=${TYPEORM_DATABASE:-netjsrealworld}'
-      - 'APP_USER=${TYPEORM_USERNAME:-netjsrealworld}'
-      - 'APP_USER_PASSWORD=${TYPEORM_PASSWORD:-netjsrealworld}'
+      - 'APP_DATABASE=${TYPEORM_DATABASE:-nestjsrealworld}'
+      - 'APP_USER=${TYPEORM_USERNAME:-nestjsrealworld}'
+      - 'APP_USER_PASSWORD=${TYPEORM_PASSWORD:-nestjsrealworld}'
       - TZ=Europe/Copenhagen
       - LANG=en_US.UTF-8
       - LANGUAGE=en_US.UTF-8
