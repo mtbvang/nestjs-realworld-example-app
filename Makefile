@@ -145,6 +145,10 @@ build: ## build typescript to js files in dist dir.
 test: set-env-file-local ## set the .env file and run tests
 	@npm run test
 
+.PHONY: test-performance
+test-performance: ## run performance tests
+	@$$(npm bin)/artillery run tests/performance/article.yml
+
 .PHONY: db-migration-generate
 db-migration-generate: set-env-file-local ## Generate the db migrations from the entities.
 	@if [[ -z "${NEWVERSION}" ]]; then \
