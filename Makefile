@@ -141,6 +141,10 @@ build: ## build typescript to js files in dist dir.
 	npm run build; \
 	chmod -R 0777 dist
 
+.PHONY: test
+test: set-env-file-local ## set the .env file and run tests
+	@npm run test
+
 .PHONY: db-migration-generate
 db-migration-generate: set-env-file-local ## Generate the db migrations from the entities.
 	@if [[ -z "${NEWVERSION}" ]]; then \
@@ -191,6 +195,7 @@ db-restore-%: ## db-restore-(local|docker|docker-cypress|dev|stage|prod). Recrea
 	$(MAKE)	db-create-$* || (exit 1) && \
 	$(MAKE)	db-migration-run-$* || (exit 1) && \
 	$(MAKE)	db-load-fixtures-$* || (exit 1) && \
+	$(MAKE) set-env-file-local;  \
 	echo 'Database recreated and migrations applied.'
 
 .PHONY: clean-bak-files

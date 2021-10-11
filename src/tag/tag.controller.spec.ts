@@ -1,22 +1,30 @@
-import { Test } from '@nestjs/testing';
+import {Test, TestingModule} from '@nestjs/testing';
 import { TagController } from './tag.controller';
 import { TagService } from './tag.service';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {TagEntity} from "./tag.entity";
+import {ConfigModule} from "@nestjs/config";
 
 describe('TagController', () => {
   let tagController: TagController;
   let tagService: TagService;
+  let module: TestingModule;
 
   beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      imports: [TypeOrmModule.forRoot(), TypeOrmModule.forFeature([TagEntity])],
+    module = await Test.createTestingModule({
+      imports: [TypeOrmModule.forRoot(), ConfigModule.forRoot({
+        isGlobal: true,
+      }), TypeOrmModule.forFeature([TagEntity])],
       controllers: [TagController],
       providers: [TagService],
     }).compile();
 
     tagService = module.get<TagService>(TagService);
     tagController = module.get<TagController>(TagController);
+  });
+
+  afterEach(async () => {
+    await module.close();
   });
 
   describe('findAll', () => {
