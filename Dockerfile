@@ -47,8 +47,7 @@ WORKDIR /app
 ENTRYPOINT ["/sbin/tini", "--"]
 # Uncomment and replace commands to keep container running for debugging
 #CMD tail -f /dev/null
-# Run script for AWS
-#CMD ["/app/bin/run-app.sh"]
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Testing layer used to run tests in container for CI.

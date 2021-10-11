@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
       target: api-dev
     environment:
-      - NODE_ENV=DOCKER
+      - NODE_ENV=docker
     ports:
       - '${API_PORT:-23000}:3000'
       - '${API_DEBUG_PORT:-29229}:9229'
@@ -19,8 +19,8 @@ services:
       - database:database
     volumes:
       - .:/app
-      - /app/node_modules # This trick stops the local nodemodules folder from being mounted. This is need because node modules are OS dependent. We volume is reuseable if we don't destroy it.
-    command: npm run start:watch
+      - /app/node_modules/ # This trick stops the local nodemodules folder from being mounted. This is need because node modules are OS dependent. We volume is reuseable if we don't destroy it.
+    command: 'npm run start:watch'
 
   database:
     ipc: host

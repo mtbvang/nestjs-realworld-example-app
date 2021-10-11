@@ -42,6 +42,10 @@ NODE_VERSION = 12.14.1
 VERSION_API_APP ?= 0.0.1
 VERSION_DB_MIGRATION ?= 0
 
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_BRANCH=$(shell git name-rev --name-only HEAD)
+GIT_BRANCH_SHORT=$(shell echo ${GIT_BRANCH} | tr -cd '[a-zA-Z0-9]')
+
 #--------------------------------------------------------
 # START TARGETS FOR DOCKER COMPOSE FOR LOCAL DEVELOPMENT
 #--------------------------------------------------------
@@ -49,8 +53,9 @@ VERSION_DB_MIGRATION ?= 0
 COMPOSE_HTTP_TIMEOUT=600
 API_HOST_PORT_BASE?=20000
 BUILD_NUMBER?=0
+COMPOSE_BASENAME=nestjsexampleapp_api
 # COMPOSE_PROJECT_NAME e.g. nestjsexampleapp_api_0_featurevang. Name the project to allow multiple docker compose stacks
-COMPOSE_PROJECT_NAME?=nestjsexampleapp_api_${BUILD_NUMBER}_${GIT_BRANCH_SHORT}
+COMPOSE_PROJECT_NAME?=${COMPOSE_BASENAME}_${BUILD_NUMBER}_${GIT_BRANCH_SHORT}
 # e.g. 23000
 API_PORT?=$$((${BUILD_NUMBER} + ${API_HOST_PORT_BASE} + 3000))
 # e.g. 29229
@@ -60,7 +65,7 @@ API_TESTS_DEBUG_PORT?=$$((${API_HOST_PORT_BASE} + 10000 + 9229))
 # e.g. 25432
 DATABASE_PORT?=$$((${API_HOST_PORT_BASE} + ${TYPEORM_PORT}))
 
-DOCKER_COMPOSE_ENV_VARS_BACKEND=API_PORT=${API_PORT} API_DEBUG_PORT=${API_DEBUG_PORT} API_TESTS_DEBUG_PORT=${API_TESTS_DEBUG_PORT} API_CYPRESS_PORT=${API_CYPRESS_PORT} API_AWS_PORT=${API_AWS_PORT} DATABASE_PORT=${DATABASE_PORT}
+DOCKER_COMPOSE_ENV_VARS_BACKEND=API_PORT=${API_PORT} API_DEBUG_PORT=${API_DEBUG_PORT} API_TESTS_DEBUG_PORT=${API_TESTS_DEBUG_PORT} API_CYPRESS_PORT=${API_CYPRESS_PORT} DATABASE_PORT=${DATABASE_PORT}
 DOCKER_COMPOSE_ENV_VARS_DATABASE=DATABASE_PORT=${DATABASE_PORT}
 DOCKER_COMPOSE_ENV_VARS_LOCALDEV=NODE_VERSION=${NODE_VERSION} CURRENT_UID=$(CURRENT_UID) CURRENT_GID=$(CURRENT_GID) CURRENT_USERNAME=$(CURRENT_USERNAME) CURRENT_GROUPNAME=$(CURRENT_GROUPNAME)
 DOCKER_COMPOSE_ENV_VARS=COMPOSE_HTTP_TIMEOUT=${COMPOSE_HTTP_TIMEOUT} COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME} ${DOCKER_COMPOSE_ENV_VARS_LOCALDEV} ${DOCKER_COMPOSE_ENV_VARS_BACKEND} ${DOCKER_COMPOSE_ENV_VARS_DATABASE}
@@ -82,46 +87,38 @@ set-env-file-%: ## db-set-env-file-(local|docker|stage|prod) Set the environment
 
 .PHONY: up
 up: set-env-file-docker ports ## Bring up the database, and api containers.
-	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} up --build --no-recreate -d; \
+	@${DOCKER_COMPOSE_ENV_VARS} API_COMMAND='TODO' ${DOCKER_COMPOSE_ALIAS} up --build --no-recreate -d; \
 
 
 .PHONY: down
-down: ## Stop and remove containers, networks, images, and volumes
+down: set-env-file-docker ## Stop and remove containers, networks, images, and volumes
 	${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} down -v
 
 .PHONY: recreate
 recreate: down up ## Down and up the containers to clear networks and rebuild the containers.
 
 .PHONY: stop
-stop: ## Stop services
+stop: set-env-file-docker ## Stop services
 	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} stop
 
 .PHONY: logs
-logs: ## Show container logs
+logs: set-env-file-docker ## Show container logs
 	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} logs -f -t
 
 .PHONY: logs-*
-logs-%:  ## logs-(api|database). Show logs for the service name specified.
+logs-%: set-env-file-docker ## logs-(api|database). Show logs for the service name specified.
 	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} logs -f -t $*
 
 .PHONY: up-*
 up-%: set-env-file-docker ## up-(api|database) Bring up only the an in container. Run this to recreate the container.
-	@API_COMMAND='npm run serve' ${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} up --build -d $*
-
-.PHONY: debug
-debug: stop-api ## Run the api container in debug mode.
-	@API_COMMAND='npm run debug' ${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} up --build -d api
-
-.PHONY: debug-tests
-debug-tests: up-database ## Run the api tests in debug mode in docker.
-	${DOCKER_COMPOSE_ENV_VARS} API_TEST_COMMAND='npm run debug-tests' ${DOCKER_COMPOSE_ALIAS} run -p ${API_TESTS_DEBUG_PORT}:${API_DOCKER_DEBUG_PORT} api-tests;
+	@API_COMMAND='TODO' ${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} up --build -d $*
 
 .PHONY: start-*
 start-%: set-env-file-docker ## start-(api|database). Start the container specified by the docker compose service name.
-	@${DOCKER_COMPOSE_ENV_VARS} API_COMMAND='npm run serve' ${DOCKER_COMPOSE_ALIAS} start $*
+	@${DOCKER_COMPOSE_ENV_VARS} API_COMMAND='TODO' ${DOCKER_COMPOSE_ALIAS} start $*
 
 .PHONY: stop-*
-stop-%: ## stop-(api|database). Stop the container specified by the docker compose service name.
+stop-%: set-env-file-docker ## stop-(api|database). Stop the container specified by the docker compose service name.
 	@${DOCKER_COMPOSE_ENV_VARS} ${DOCKER_COMPOSE_ALIAS} stop $*
 
 .PHONY: restart-*
@@ -200,3 +197,32 @@ db-restore-%: ## db-restore-(local|docker|docker-cypress|dev|stage|prod). Recrea
 clean-bak-files: ## Remove all .bak files create by sed -i.bak option
 	@rm -f .*.bak || true; \
 	rm -f *.bak || true;
+
+docker-clean: docker-rm-all docker-rm-dangling-volumes docker-rmi-untagged docker-rmi ## Remove dangling volumes and untagged images and stopped containers.
+	@docker container prune -f; \
+	docker network prune -f; \
+	echo "Removed dangling volumes and untagged images and pruned stopped containers and networks"
+
+.PHONY:	docker-rm-all
+docker-rm-all: ## remove all containers
+	docker rm $$(docker ps -a -q) || true
+
+.PHONY:	docker-rm-dangling-volumes
+docker-rm-dangling-volumes: ## Delete the orphaned volumes in Docker
+		docker volume rm $$(docker volume ls -qf dangling=true) || true
+
+.PHONY:	docker-ls-dangling-volumes
+docker-ls-dangling-volumes: ## List dangling volumes
+	docker volume ls -qf dangling=true
+
+.PHONY: docker-rmi
+docker-rmi: ## remove docker images. Those images still in use will not be removed.
+	docker rmi $$(docker images | grep ${COMPOSE_BASENAME}) || true
+
+.PHONY:	docker-rmi-untagged
+docker-rmi-untagged: ## remove untagged images to reclaim space
+	docker rmi $$(docker images | grep "<none>" | awk "{print \$$3}") || true
+
+.PHONY: docker-stop-all
+docker-stop-all: ## stop all container
+	@docker container stop $$(docker container ls -aq)
