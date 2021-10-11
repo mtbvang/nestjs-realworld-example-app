@@ -77,7 +77,7 @@ e.g. 1594235982458-v1_.ts.
 
 Run database migrations (locally)
 
-    mak db-migration-run-local
+    make db-migration-run-local  
 
 ----------
 
@@ -138,6 +138,8 @@ More information regarding the project can be found here https://github.com/goth
 - Test api with `http://localhost:3000/api/articles` in your favourite browser
 
 ----------
+
+## Performance Testing
 
 # Authentication
  
